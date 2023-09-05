@@ -54,6 +54,7 @@ const Color = sequelize.define(
 function validateColor(color) {
   const schema = Joi.object({
     name: Joi.string().max(50).required(),
+    product_id: Joi.string().guid(),
   });
   return schema.validate(color);
 }

@@ -43,7 +43,6 @@ const Products = sequelize.define(
 //joi validation
 function validateProduct(product) {
   const schema = Joi.object({
-    full_name: Joi.string().required(),
     title: Joi.string().max(50).required(),
     description: Joi.string().required(),
   });

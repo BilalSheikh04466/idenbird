@@ -57,14 +57,11 @@ function* createProduct({ payload }) {
     });
     const response = yield call(api.createProduct, formData);
 
-    // yield put(
-    //   actions.createProductSuccess({
-    //     message: result.data,
-    //   })
-
-    // );
-
-    // yield put(actions.getProductRequest());
+    yield put(
+      actions.createProductSuccess({
+        message: response.data.message,
+      })
+    );
   } catch (e) {
     if (e.message === "Error: Not authorized, no token") {
       setSession(null);

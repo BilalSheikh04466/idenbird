@@ -54,6 +54,7 @@ const Tones = sequelize.define(
 function validateTones(tone) {
   const schema = Joi.object({
     name: Joi.string().max(50).required(),
+    color_id: Joi.string().guid(),
   });
   return schema.validate(tone);
 }

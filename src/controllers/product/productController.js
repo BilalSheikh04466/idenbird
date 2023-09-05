@@ -3,18 +3,23 @@ const asyncHandler = require("express-async-handler");
 // // const { Users, validateUser } = require("../../models/users");
 
 // const { expressValidatorError } = require("../../middleware/commonMiddleware");
-// const {
-//   userCreation,
-//   userWorkingHistoryCreation,
-//   //   getUserByIdMiddleware,
-//   permissionCreation,
-//   //   userUpdation,
-//   getUserByEmailAndCNIC,
-//   encryptPassword,
-//   //   refactorUsersData,
-//   //   getAllusersMiddleware,
-//   //   getUserByIdWithDetailMiddleware,
-// } = require("./productHelper");
+const {
+  productCreation,
+  colorCreation,
+  toneCreation,
+  addPicByToneId,
+  //   getUserByIdMiddleware,
+
+  //   userUpdation,
+  //   getUserByEmailAndCNIC,
+  //   encryptPassword,
+  //   refactorUsersData,
+  //   getAllusersMiddleware,
+  //   getUserByIdWithDetailMiddleware,
+} = require("./productHelper");
+const { validateProduct } = require("../../models/products");
+const { validateColor } = require("../../models/color");
+const { validateTones } = require("../../models/tones");
 // const {
 //   addProfilePicByUserID,
 //   updateProfilePicByUserID,
@@ -32,114 +37,97 @@ const createProduct = asyncHandler(async (req, res) => {
   const prodectData = JSON.parse(req.body.productData);
   const product_pic = req?.files;
 
-  //   const userDetail = userData.user;
-  //   userDetail.added_by = req.result.id;
-  //   userDetail.email_verified = true;
-  //   userDetail.email_verified_at = Date.now();
+  const t = await sequelize.transaction();
 
-  //   //validate userDetail
-  //   if (userDetail) {
-  //     const { error } = validateUser(userDetail);
-  //     if (error) {
-  //       res.status(400);
-  //       throw new Error(error.details[0].message);
-  //     }
-  //   }
+  try {
+    // Create the main product
 
-  //   const t = await sequelize.transaction();
-  //   try {
-  //     //check if user exist
-  //     const userExists = await getUserByEmailAndCNIC(userDetail, null);
+    const product = {
+      title: prodectData.title,
+      description: prodectData.description,
+    };
+    //  Validate Product
+    if (product) {
+      const { error } = validateProduct(product);
+      if (error) {
+        res.status(400);
+        throw new Error(error.details[0].message);
+      }
+    }
+    const productDetail = await productCreation(product, t);
+    if (!productDetail) {
+      throw new Error("Product could not be created.");
+    }
 
-  //     if (userExists) {
-  //       res.status(400);
-  //       throw new Error(
-  //         "User already exists with same email address or CNIC number"
-  //       );
-  //     }
-  //     //encrypt password
-  //     userDetail.password = await encryptPassword(userDetail.password);
+    await Promise.all(
+      prodectData.colorCombination.map(async (data, index) => {
+        const colorData = {
+          name: data.name,
+          product_id: productDetail.id,
+        };
 
-  //     //create user
-  //     const userDetails = await userCreation(userDetail, t);
+        // Validate Color
+        const { error } = validateColor(colorData);
+        if (error) {
+          throw new Error(error.details[0].message);
+        }
 
-  //     if (!userDetails) {
-  //       res.status(400);
-  //       throw new Error(
-  //         "User could not be created. Rollback initiated in users."
-  //       );
-  //     }
-  //     if (profile_pic) {
-  //       addProfilePicByUserID(userDetails.id, profile_pic, t);
-  //     }
-  //     //create userWorkingHistory
-  //     const dates = await userWorkingHistoryCreation(
-  //       userData.dates,
-  //       userDetails.id,
-  //       t
-  //     );
-  //     if (!dates) {
-  //       res.status(400);
-  //       throw new Error(
-  //         "dates could not be created. Rollback initiated in on joining/released date."
-  //       );
-  //     }
+        const colorDetails = await colorCreation(colorData, t);
+        if (!colorDetails) {
+          throw new Error("Color could not be created.");
+        }
 
-  //     //create PermissionSettings
-  //     const permissions = await permissionCreation(
-  //       userData.permissions,
-  //       userDetails.id,
-  //       t
-  //     );
+        await Promise.all(
+          data.tones.map(async (toneData, toneIndex) => {
+            const tone = {
+              color_id: colorDetails.id,
+              name: toneData.name,
+            };
 
-  //     if (!permissions) {
-  //       res.status(400);
-  //       throw new Error(
-  //         "Permission settings could not be created. Rollback initiated in permission settings."
-  //       );
-  //     }
+            // Validate Tone
+            const { error } = validateTones(tone);
+            if (error) {
+              throw new Error(error.details[0].message);
+            }
 
-  //     // // if user is hunter and we have send store id then
-  //     // if (
-  //     //   permissions.hunting_form_view_and_edit &&
-  //     //   req.result.permission_settings.manage_vendors_view &&
-  //     //   userData.assigned_store
-  //     // ) {
-  //     //   const assignedStore = await assignStoreMiddelware(
-  //     //     userDetails.id,
-  //     //     userData.assigned_store,
-  //     //     req.result.id,
-  //     //     false, //check user
-  //     //     t
-  //     //   );
+            const toneDetails = await toneCreation(tone, t);
+            if (!toneDetails) {
+              throw new Error(
+                `Tone could not be created at index ${toneIndex}.`
+              );
+            }
 
-  //     //   if (!assignedStore) {
-  //     //     res.status(400);
-  //     //     throw new Error(
-  //     //       "Error occur during store assignement. Rollback initiated in assign store."
-  //     //     );
-  //     //   }
-  //     // }
+            addPicByToneId(
+              toneDetails.id,
+              product_pic[
+                `colorCombination[${index}].tones[${toneIndex}].shade`
+              ]
+            );
+          })
+        );
+      })
+    );
 
-  //     await t.commit();
-  //     return res.status(200).json({ message: "User created successfully!" });
-  //   } catch (error) {
-  //     await t.rollback();
-  //     res.status(
-  //       error.statusCode
-  //         ? error.statusCode
-  //         : res.statusCode
-  //         ? res.statusCode
-  //         : 500
-  //     );
-  //     throw new Error(
-  //       `${
-  //         error.statusCode !== 400 && res.statusCode !== 400
-  //           ? "Something went wrong in user creation: "
-  //           : ""
-  //       }${error.message}`
-  //     );
-  //   }
+    // Commit the transaction after all operations succeed
+    await t.commit();
+    return res.status(200).json({ message: "Product created successfully!" });
+  } catch (error) {
+    await t.rollback();
+    res.status(
+      error.statusCode
+        ? error.statusCode
+        : res.statusCode
+        ? res.statusCode
+        : 500
+    );
+    throw new Error(
+      `${
+        error.statusCode !== 400 && res.statusCode !== 400
+          ? "Something went wrong in user creation: "
+          : ""
+      }${error.message}`
+    );
+  }
 });
 
 // const updateUserProfile = asyncHandler(async (req, res) => {

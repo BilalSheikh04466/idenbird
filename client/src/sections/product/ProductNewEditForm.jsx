@@ -49,27 +49,9 @@ const ProductSchema = Yup.object().shape({
       name: Yup.array().of(Yup.string().required("Shade Name is required")),
     })
   ),
-  // shades: Yup.array().of(
-  //   Yup.object().shape({
-  //     shades: Yup.array().of(
-  //       Yup.object().shape({
-  //         name: Yup.string().required("Shades is required"),
-  //       })
-  //     ),
-  //   })
-  // ),
 });
 
-function ProductNewEditForm({
-  Auth: { user },
-
-  isEdit = false,
-  currentUser,
-  handleSubmited,
-  handleData,
-}) {
-  // const navigate = useNavigate();
-
+function ProductNewEditForm({ isEdit = false, currentUser, handleSubmited }) {
   const defaultValues = useMemo(
     () => ({
       title: currentUser?.availableColors || "",
@@ -364,30 +346,15 @@ function ProductNewEditForm({
                           />
                         )}
                       />
-                      // <Controller
-                      //   key={`${index}${shadeindex}`}
-                      //   name={`shades[${index}].name[${shadeindex}]`}
-                      //   control={control}
-                      //   defaultValue=""
-                      //   render={({ field, fieldState: { error, invalid } }) => (
-                      //     <TextField
-                      //       {...field}
-                      //       label="shades *"
-                      //       variant="outlined"
-                      //       error={invalid}
-                      //       helperText={invalid ? error.message : null}
-                      //       margin="none"
-                      //       fullWidth
-                      //       color="primary"
-                      //     />
-                      //   )}
-                      // />
                     ))}
 
                     <Button
                       color="error"
                       sx={{ width: "55px", height: "55px" }}
-                      onClick={() => removeTones(index)}
+                      onClick={() => {
+                        removeTones(index);
+                        removeShades(index);
+                      }}
                     >
                       <Iconify
                         sx={{ width: "22px", height: "22px" }}
@@ -425,15 +392,10 @@ function ProductNewEditForm({
 }
 
 ProductNewEditForm.propTypes = {
-  Auth: PropTypes.object.isRequired,
   isEdit: PropTypes.bool,
   currentUser: PropTypes.object,
   handleSubmited: PropTypes.func,
   handleData: PropTypes.func,
 };
 
-const mapStateToProps = (state) => ({
-  Auth: state.Auth,
-});
-
-export default connect(mapStateToProps, {})(ProductNewEditForm);
+export default connect(null, {})(ProductNewEditForm);

@@ -1,9 +1,11 @@
 import PropTypes from "prop-types";
 import { connect } from "react-redux";
-import { useState, Fragment, useEffect } from "react";
+import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 // @mui
-import { Grid, Container } from "@mui/material";
+import { Container } from "@mui/material";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
 // routes
 import { PATH_AUTH, PATH_DASHBOARD } from "../../routes/paths";
@@ -12,77 +14,59 @@ import CustomBreadcrumbs from "../../components/custom-breadcrumbs";
 // sections
 import ProductNewEditForm from "../../sections/product/ProductNewEditForm";
 
-// action
-// import {
-//   createUserRequest,
-//   clearMessage,
-//   clearError,
-// } from "../../actions/users";
-import { createProductRequest } from "../../actions/products";
+// actions
+import {
+  createProductRequest,
+  clearMessage,
+  clearError,
+} from "../../actions/products";
 
 // ----------------------------------------------------------------------
 
 function ProductCreatePage({
-  // Users: { message, error },
+  Product: { message, error },
   Auth: { isAuthenticated },
   createProduct,
-  // eslint-disable-next-line
-  // clearMessage,
-  // eslint-disable-next-line
-  // clearError,
+  clrMessage,
+  clrError,
 }) {
   const navigate = useNavigate();
 
-  const [userData, setUserData] = useState(null);
+  const msgToast = (msg) =>
+    toast.success(msg, { autoClose: 5000, onClose: () => clrMessage() });
 
-  // const { enqueueSnackbar } = useSnackbar();
+  const errToast = (err) =>
+    toast.error(err, { autoClose: 5000, onClose: () => clrError() });
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate(PATH_AUTH.login, { replace: true });
     }
 
-    // if (message) {
-    // enqueueSnackbar(message);
+    // eslint-disable-next-line
+  }, [isAuthenticated]);
 
-    // setUserData(null);
-
-    // clearMessage
-    // clearMessage();
-    // }
-    // if (error) {
-    // enqueueSnackbar(error, { variant: "error" });
-    // clearError
-    // clearError();
-    // }
+  useEffect(() => {
+    if (message) {
+      msgToast(message);
+    }
+    if (error) {
+      errToast(error);
+    }
 
     // eslint-disable-next-line
-  }, [
-    isAuthenticated,
-    // message, error
-  ]);
+  }, [message, error]);
 
-  // const handleNext = (user) => {
-  //   setUserData(user);
-
-  //   setActiveStep((prevActiveStep) => prevActiveStep + 1);
-  // };
   const handleSubmit = (productData) => {
-    console.log(productData);
     createProduct(productData);
   };
-
-  // const handleReset = (permission) => {
-  //   setPermissionSettings(permission);
-  //   createUserRequest(userData, permission);
-  // };
 
   return (
     <>
       <Helmet>
         <title> Products: Create a new product</title>
       </Helmet>
-
+      <ToastContainer />
       <Container maxWidth="lg">
         <CustomBreadcrumbs
           heading="Create a product"
@@ -95,30 +79,27 @@ function ProductCreatePage({
           ]}
         />
 
-        <ProductNewEditForm
-          handleSubmited={handleSubmit}
-          currentUser={userData}
-        />
+        <ProductNewEditForm handleSubmited={handleSubmit} />
       </Container>
     </>
   );
 }
 
 ProductCreatePage.propTypes = {
-  // Users: PropTypes.object.isRequired,
+  Product: PropTypes.object.isRequired,
   Auth: PropTypes.object.isRequired,
   createProduct: PropTypes.func.isRequired,
-  // clearMessage: PropTypes.func.isRequired,
-  // clearError: PropTypes.func.isRequired,
+  clrMessage: PropTypes.func.isRequired,
+  clrError: PropTypes.func.isRequired,
 };
 
 const mapStateToProps = (state) => ({
-  // Users: state.Users,
+  Product: state.Product,
   Auth: state.Auth,
 });
 
 export default connect(mapStateToProps, {
   createProduct: createProductRequest,
-  // clearMessage,
-  // clearError,
+  clrMessage: clearMessage,
+  clrError: clearError,
 })(ProductCreatePage);
